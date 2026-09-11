@@ -1,6 +1,7 @@
-import DataParser
-import LLMInterface
+from DataParser import DataParser
+from LLMInterface import LLMInterface
 
 if __name__ == "__main__":
-    parser = DataParser('data.csv')
-    llm = LLMInterface()
+    data = DataParser()
+
+    # llm = LLMInterface()
