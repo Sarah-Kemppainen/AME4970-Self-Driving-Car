@@ -10,6 +10,7 @@ class Data:
     # The constructor method initializes the object's attributes
     def __init__(self, ):
         self.rawData = self.ParseRawData()
+        self.data = self.CalculateData()
 
         self.x, self.y = self.calcLocalXY()
         
@@ -50,6 +51,17 @@ class Data:
         df['actual_steer_angle_deg'] = np.interp(t_idx, lateral_df['log_mono_ns'], lateral_df['actual_steer_angle_deg'])
 
         df.to_csv('data.csv', index=False)
+
+        return df
+
+    def CalculateData(self):
+        # Create df
+        df = pd.DataFrame()
+        df['log_mono_ns'] = self.rawData['log_mono_ns']
+
+        x, y = self.calcLocalXY()
+        df['x_m'] = x
+        df['y_m'] = y
 
         return df
 

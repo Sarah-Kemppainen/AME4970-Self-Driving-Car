@@ -1,12 +1,10 @@
-from Data import DataParser
+from Data import Data
 from LLMInterface import LLMInterface
 
 if __name__ == "__main__":
-    data = DataParser()
+    data = Data()
     print(data.rawData)
-    print(data.x)
-    print(data.y[0])
-
-    # How to call DataParser attributed
+    print(data.data)
+    print(data.data['x_m'])
 
     # llm = LLMInterface()
