@@ -6,12 +6,13 @@ DT = 0.01 * 1e9 # Data Frequency in ns
 GPS_DATA_FILENAME = 'data/gps.csv'
 LATERAL_DATA_FILENAME = 'data/lateral.csv'
 
-class DataParser:
+class Data:
     # The constructor method initializes the object's attributes
     def __init__(self, ):
         self.rawData = self.ParseRawData()
-        self.data = self.CalculateData()
-        print(self.data)
+
+        self.x, self.y = self.calcLocalXY()
+        
 
     def ParseRawData(self):
         # Create df
@@ -52,17 +53,7 @@ class DataParser:
 
         return df
 
-    def CalculateData(self):
-        # Create df
-        df = pd.DataFrame()
-
-        x, y = self.getLocalXY()
-        df['x'] = x
-        df['y'] = y
-
-        return df
-
-    def getLocalXY(self):
+    def calcLocalXY(self):
         lon0 = self.rawData['lon'][0]
         lat0 = self.rawData['lat'][0]
 
