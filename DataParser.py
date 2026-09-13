@@ -9,10 +9,11 @@ LATERAL_DATA_FILENAME = 'data/lateral.csv'
 class DataParser:
     # The constructor method initializes the object's attributes
     def __init__(self, ):
-        self.data = self.getData()
+        self.rawData = self.ParseRawData()
+        self.data = self.CalculateData()
         print(self.data)
 
-    def getData(self):
+    def ParseRawData(self):
         # Create df
         df = pd.DataFrame()
 
@@ -51,4 +52,30 @@ class DataParser:
 
         return df
 
-        
+    def CalculateData(self):
+        # Create df
+        df = pd.DataFrame()
+
+        x, y = self.getLocalXY()
+        df['x'] = x
+        df['y'] = y
+
+        return df
+
+    def getLocalXY(self):
+        lon0 = self.rawData['lon'][0]
+        lat0 = self.rawData['lat'][0]
+
+        coordinates = zip(self.rawData['lon'], self.rawData['lat'])
+
+        x = []
+        y = []
+
+        for lon, lat in coordinates:
+            x_new = (lon-lon0) * np.cos(lat0) * 111320
+            y_new = (lat-lat0) * 110540
+
+            x.append(x_new)
+            y.append(y_new)
+
+        return x, y
