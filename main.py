@@ -28,6 +28,8 @@ class Point:
     data.turns[id].points[id].x             Local X position [m] (origin at first position logged in raw data)
     data.turns[id].points[id].y             Local Y position [m] (origin at first position logged in raw data)
     data.turns[id].points[id].dist          Distance [m] between current point and previous point
+    data.turns[id].points[id].heading       Heading [deg] of vehicle at Point
+    data.turns[id].points[id].delta_heading Change in heading [deg] of vehicle at Point from previous Point
 """
 
 SAVE_FOLDER = 'turn_data'
@@ -53,9 +55,13 @@ if __name__ == "__main__":
     # print(data.turns[0].points[0].x)
     # print(data.turns[0].points[0].y)
     # print(data.turns[0].points[0].steer_angle)
-    print(data.turns[0].points[0].dist)
-    print(data.turns[0].points[1].dist)
+
+    # print(data.turns[0].points[0].dist)         # Distance between previous point and point[0] (nan)
+    # print(data.turns[0].points[1].dist)         # Distance between previous point and point[1] (0)
     print(data.turns[0].totalDist)
+    print(data.turns[0].points[120].heading)
+    print(data.turns[0].points[121].heading)
+    print(data.turns[0].points[121].delta_heading)
 
     # Saves data to csv files
     data.save(SAVE_FOLDER)

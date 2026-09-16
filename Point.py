@@ -19,9 +19,16 @@ class Point:
         self.x, self.y = self.calcXY()
 
         if prevPoint != "":
-            self.dist = np.sqrt((self.x-prevPoint.x)**2 + (self.y-prevPoint.y)**2)
+            deltaX = self.x - prevPoint.x
+            deltaY = self.y - prevPoint.y
+
+            self.dist = np.sqrt((deltaX)**2 + (deltaY)**2)
+            self.heading = np.mod(np.atan2(deltaX, deltaY), 360)
+            self.delta_heading = (540 + prevPoint.heading - self.heading) % 360 - 180
         else:
             self.dist = 0
+            self.heading = 0
+            self.delta_heading = 0
 
     def calcXY(self):
         x = (self.lon-LON0) * np.cos(LAT0) * 111320
@@ -41,6 +48,8 @@ class Point:
             "x [m]": [self.x],
             "y [m]": [self.y],
             "dist [m]": [self.dist],
+            "heading [deg]": [self.heading],
+            "delta_heading [deg]": [self.delta_heading],
         }
 
         return pd.DataFrame(data)
