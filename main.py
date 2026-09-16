@@ -51,6 +51,7 @@ if __name__ == "__main__":
     print(data.turns[0].points[0].y)
     print(data.turns[0].points[0].steer_angle)
 
+    # Saves data to csv files
     data.save(SAVE_FOLDER)
 
     # llm = LLMInterface()
