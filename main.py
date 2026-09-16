@@ -7,11 +7,13 @@ class Data:
     data.turns    List of Turns (identified by entering and leaving a lat/lon region)
 
 class Turn:
-    data.turns[id].turnId     ID of Turn, type:int
-    data.turns[id].type       Turn region, type:str
-    data.turns[id].bounds     Bounds of turn region, [[llim_lat, ulim_lat], [llim_lon, ulim_lon]], type:list
-    data.turns[id].points     List of Points
-    data.turns[id].size       Number of points logged in turn, type:int
+    data.turns[id].turnId           ID of Turn, type:int
+    data.turns[id].type             Turn region, type:str
+    data.turns[id].bounds           Bounds of turn region, [[llim_lat, ulim_lat], [llim_lon, ulim_lon]], type:list
+    data.turns[id].points           List of Points
+    data.turns[id].size             Number of points logged in turn, type:int
+    data.turns[id].totalDistance    Total distance traveled in Turn
+    data.turns[id].min_speed_point  Point where the minimum speed occurs (Point stores x, y, speed, steer angle, time, etc.)
 
 class Point:
     data.turns[id].points[id].pointId       ID of Point, type:int
@@ -25,6 +27,7 @@ class Point:
 
     data.turns[id].points[id].x             Local X position [m] (origin at first position logged in raw data)
     data.turns[id].points[id].y             Local Y position [m] (origin at first position logged in raw data)
+    data.turns[id].points[id].dist          Distance [m] between current point and previous point
 """
 
 SAVE_FOLDER = 'turn_data'
@@ -50,6 +53,9 @@ if __name__ == "__main__":
     # print(data.turns[0].points[0].x)
     # print(data.turns[0].points[0].y)
     # print(data.turns[0].points[0].steer_angle)
+    print(data.turns[0].points[0].dist)
+    print(data.turns[0].points[1].dist)
+    print(data.turns[0].totalDist)
 
     # Saves data to csv files
     data.save(SAVE_FOLDER)

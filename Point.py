@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
+import sys
 
 LAT0 = 35.1823543
 LON0 = -97.435558
 
 class Point:
-    def __init__(self, point, pointId, turnId):
+    def __init__(self, point, pointId, turnId, prevPoint=""):
         self.turnId = turnId
         self.pointId = pointId
         self.type = point['type']
@@ -16,6 +17,11 @@ class Point:
         self.steer_angle = point['actual_steer_angle_deg']
 
         self.x, self.y = self.calcXY()
+
+        if prevPoint != "":
+            self.dist = np.sqrt((self.x-prevPoint.x)**2 + (self.y-prevPoint.y)**2)
+        else:
+            self.dist = 0
 
     def calcXY(self):
         x = (self.lon-LON0) * np.cos(LAT0) * 111320
@@ -34,6 +40,7 @@ class Point:
             "steer_angle [deg]": [self.steer_angle],
             "x [m]": [self.x],
             "y [m]": [self.y],
+            "dist [m]": [self.dist],
         }
 
         return pd.DataFrame(data)

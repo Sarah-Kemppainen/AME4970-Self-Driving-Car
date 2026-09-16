@@ -106,7 +106,15 @@ class Data:
 
     def save(self, foldername):
         self.raw.to_csv(f'{foldername}/raw_data.csv', index=False)
+
+        df = pd.DataFrame()
+
         for turn in self.turns:
             turn.save(foldername)
+
+            tdf = Turn.to_df(turn)
+            df = pd.concat([df, tdf], ignore_index=True)
+            
+        df.to_csv(f'{foldername}/turns.csv')
 
         print(f"data successfully saved to folder: '{foldername}'")
