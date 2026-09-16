@@ -1,0 +1,53 @@
+import numpy as np
+import pandas as pd
+
+LAT0 = 35.1823543
+LON0 = -97.435558
+
+class Point:
+    def __init__(self, point, pointId, turnId):
+        self.turnId = turnId
+        self.pointId = pointId
+        self.time = point['log_mono_ns']
+        self.lat = point['lat']
+        self.lon = point['lon']
+        self.speed = point['speed_mps']
+        self.steer_angle = point['actual_steer_angle_deg']
+
+        self.x, self.y = self.calcXY()
+
+    def calcXY(self):
+        x = (self.lon-LON0) * np.cos(LAT0) * 111320
+        y = (self.lat-LAT0) * 110540
+        return x, y
+
+    def to_df(self):
+        data = {
+            "turnId": [self.turnId],
+            "pointId": [self.pointId],
+            "time [ns]": [self.time],
+            "lat [deg]": [self.lat],
+            "lon [deg]": [self.lon],
+            "speed [mps]": [self.speed],
+            "steer_angle [deg]": [self.steer_angle],
+            "x [m]": [self.x],
+            "y [m]": [self.y],
+        }
+        
+        return pd.DataFrame(data)
+
+    # Print Functions
+    def __str__(self):
+        return (
+            f"Point("
+            f"pointId={self.pointId}, "
+            f"turnId={self.turnId}, "
+            f"time={self.time}, "
+            f"lat={self.lat}, "
+            f"lon={self.lon}, "
+            f"speed={self.speed}, "
+            f"steer_angle={self.steer_angle}, "
+            f"x={self.x}, "
+            f"y={self.y}"
+            f")"
+        )

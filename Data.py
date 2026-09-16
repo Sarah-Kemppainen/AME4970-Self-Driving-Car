@@ -1,21 +1,25 @@
 import pandas as pd
 import numpy as np
 
+from Turn import Turn
+
 DT = 0.01 * 1e9 # Data Frequency in ns
 
 GPS_DATA_FILENAME = 'data/gps.csv'
 LATERAL_DATA_FILENAME = 'data/lateral.csv'
 
+BOUND_A = [[35.183, 35.1836], [-97.4365, -97.43555]]
+BOUND_B = [[35.1825, 35.183], [-97.43755, -97.437]]
+BOUND_C = [[35.18125, 35.182], [-97.438, -97.436]]
+BOUND_D = [[35.1815, 35.182], [-97.436, -97.4355]]
+
 class Data:
     # The constructor method initializes the object's attributes
     def __init__(self, ):
-        self.rawData = self.ParseRawData()
-        self.data = self.CalculateData()
-
-        self.x, self.y = self.calcLocalXY()
+        self.raw = self.getRawData()
+        self.turns = self.getTurns()
         
-
-    def ParseRawData(self):
+    def getRawData(self):
         # Create df
         df = pd.DataFrame()
 
@@ -50,35 +54,48 @@ class Data:
         df['speed_mps'] = np.interp(t_idx, gps_df['log_mono_ns'], gps_df['speed_mps'])     # speed [mps]
         df['actual_steer_angle_deg'] = np.interp(t_idx, lateral_df['log_mono_ns'], lateral_df['actual_steer_angle_deg'])
 
-        df.to_csv('data.csv', index=False)
-
         return df
 
-    def CalculateData(self):
-        # Create df
-        df = pd.DataFrame()
-        df['log_mono_ns'] = self.rawData['log_mono_ns']
+    def getTurns(self):
+        df = self.raw
 
-        x, y = self.calcLocalXY()
-        df['x_m'] = x
-        df['y_m'] = y
+        # Fill type column with empty strings
+        df['type'] = np.full(len(df['log_mono_ns']), "")
 
-        return df
+        turn_logger = []
+        turn_counter = 0
+        turns = []
 
-    def calcLocalXY(self):
-        lon0 = self.rawData['lon'][0]
-        lat0 = self.rawData['lat'][0]
+        for i, row in df.iterrows():
+            if (BOUND_A[0][0] <= row['lat'] <= BOUND_A[0][1]) and (BOUND_A[1][0] <= row['lon'] <= BOUND_A[1][1]):
+                df.loc[i, 'type'] = "A"
+                turn_bounds = BOUND_A
+            elif (BOUND_B[0][0] <= row['lat'] <= BOUND_B[0][1]) and (BOUND_B[1][0] <= row['lon'] <= BOUND_B[1][1]):
+                df.loc[i, 'type'] = "B"
+                turn_bounds = BOUND_B
+            elif (BOUND_C[0][0] <= row['lat'] <= BOUND_C[0][1]) and (BOUND_C[1][0] <= row['lon'] <= BOUND_C[1][1]):
+                df.loc[i, 'type'] = "C"
+                turn_bounds = BOUND_C
+            elif (BOUND_D[0][0] <= row['lat'] <= BOUND_D[0][1]) and (BOUND_D[1][0] <= row['lon'] <= BOUND_D[1][1]):
+                df.loc[i, 'type'] = "D"
+                turn_bounds = BOUND_D
+                
+            if df.loc[i, 'type']: # and (df.loc[i, 'type'] != df.loc[i-1, 'type']):
+                turn_logger.append(df.loc[i])
+            else:
+                # logs only if currTurn is not emtpy
+                if turn_logger:
+                    turn = Turn(turn_counter, turn_logger, turn_bounds)
+                    turns.append(turn)
+                    
+                    turn_logger = []
+                    turn_counter += 1
 
-        coordinates = zip(self.rawData['lon'], self.rawData['lat'])
+        return turns
 
-        x = []
-        y = []
+    def save(self, foldername):
+        self.raw.to_csv(f'{foldername}/raw_data.csv', index=False)
+        for turn in self.turns:
+            turn.save(foldername)
 
-        for lon, lat in coordinates:
-            x_new = (lon-lon0) * np.cos(lat0) * 111320
-            y_new = (lat-lat0) * 110540
-
-            x.append(x_new)
-            y.append(y_new)
-
-        return x, y
+        print(f"data successfully saved to folder:{foldername}")
