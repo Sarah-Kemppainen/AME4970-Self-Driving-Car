@@ -8,9 +8,10 @@ class Point:
     def __init__(self, point, pointId, turnId):
         self.turnId = turnId
         self.pointId = pointId
+        self.type = point['type']
         self.time = point['log_mono_ns']
-        self.lat = point['lat']
         self.lon = point['lon']
+        self.lat = point['lat']
         self.speed = point['speed_mps']
         self.steer_angle = point['actual_steer_angle_deg']
 
@@ -25,15 +26,16 @@ class Point:
         data = {
             "turnId": [self.turnId],
             "pointId": [self.pointId],
+            "type": [self.type],
             "time [ns]": [self.time],
-            "lat [deg]": [self.lat],
             "lon [deg]": [self.lon],
+            "lat [deg]": [self.lat],
             "speed [mps]": [self.speed],
             "steer_angle [deg]": [self.steer_angle],
             "x [m]": [self.x],
             "y [m]": [self.y],
         }
-        
+
         return pd.DataFrame(data)
 
     # Print Functions

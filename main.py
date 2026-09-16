@@ -42,14 +42,14 @@ if __name__ == "__main__":
     #     for point in turn.points:
     #         print(point)
 
-    # Prints the turn ID of the first turn logged
-    print(data.turns[0].turnId)
+    # # Prints the turn ID of the first turn logged
+    # print(data.turns[0].turnId)
 
-    # Prints the local x, local y and steering angle
-    # of the first point in the first turn logged
-    print(data.turns[0].points[0].x)
-    print(data.turns[0].points[0].y)
-    print(data.turns[0].points[0].steer_angle)
+    # # Prints the local x, local y and steering angle
+    # # of the first point in the first turn logged
+    # print(data.turns[0].points[0].x)
+    # print(data.turns[0].points[0].y)
+    # print(data.turns[0].points[0].steer_angle)
 
     # Saves data to csv files
     data.save(SAVE_FOLDER)

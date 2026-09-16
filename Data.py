@@ -8,10 +8,10 @@ DT = 0.01 * 1e9 # Data Frequency in ns
 GPS_DATA_FILENAME = 'data/gps.csv'
 LATERAL_DATA_FILENAME = 'data/lateral.csv'
 
-BOUND_A = [[35.183, 35.1836], [-97.4365, -97.43555]]
-BOUND_B = [[35.1825, 35.183], [-97.43755, -97.437]]
-BOUND_C = [[35.18125, 35.182], [-97.438, -97.436]]
-BOUND_D = [[35.1815, 35.182], [-97.436, -97.4355]]
+BOUND_A = [[-97.4365, -97.435], [35.181, 35.1825]]
+BOUND_B = [[-97.438, -97.4365], [35.181, 35.1825]]
+BOUND_C = [[-97.438, -97.4365], [35.1825, 35.184]]
+BOUND_D = [[-97.4365, -97.435], [35.1825, 35.184]]
 
 class Data:
     # The constructor method initializes the object's attributes
@@ -67,29 +67,40 @@ class Data:
         turns = []
 
         for i, row in df.iterrows():
-            if (BOUND_A[0][0] <= row['lat'] <= BOUND_A[0][1]) and (BOUND_A[1][0] <= row['lon'] <= BOUND_A[1][1]):
-                df.loc[i, 'type'] = "A"
-                turn_bounds = BOUND_A
-            elif (BOUND_B[0][0] <= row['lat'] <= BOUND_B[0][1]) and (BOUND_B[1][0] <= row['lon'] <= BOUND_B[1][1]):
-                df.loc[i, 'type'] = "B"
-                turn_bounds = BOUND_B
-            elif (BOUND_C[0][0] <= row['lat'] <= BOUND_C[0][1]) and (BOUND_C[1][0] <= row['lon'] <= BOUND_C[1][1]):
-                df.loc[i, 'type'] = "C"
-                turn_bounds = BOUND_C
-            elif (BOUND_D[0][0] <= row['lat'] <= BOUND_D[0][1]) and (BOUND_D[1][0] <= row['lon'] <= BOUND_D[1][1]):
-                df.loc[i, 'type'] = "D"
-                turn_bounds = BOUND_D
-                
-            if df.loc[i, 'type']: # and (df.loc[i, 'type'] != df.loc[i-1, 'type']):
-                turn_logger.append(df.loc[i])
+            if (BOUND_A[0][0] <= row['lon'] <= BOUND_A[0][1]) and (BOUND_A[1][0] <= row['lat'] <= BOUND_A[1][1]):
+                currType = "A"
+                currBounds = BOUND_A
+            elif (BOUND_B[0][0] <= row['lon'] <= BOUND_B[0][1]) and (BOUND_B[1][0] <= row['lat'] <= BOUND_B[1][1]):
+                currType = "B"
+                currBounds = BOUND_B
+            elif (BOUND_C[0][0] <= row['lon'] <= BOUND_C[0][1]) and (BOUND_C[1][0] <= row['lat'] <= BOUND_C[1][1]):
+                currType = "C"
+                currBounds = BOUND_C
+            elif (BOUND_D[0][0] <= row['lon'] <= BOUND_D[0][1]) and (BOUND_D[1][0] <= row['lat'] <= BOUND_D[1][1]):
+                currType = "D"
+                currBounds = BOUND_D
             else:
-                # logs only if currTurn is not emtpy
-                if turn_logger:
-                    turn = Turn(turn_counter, turn_logger, turn_bounds)
-                    turns.append(turn)
-                    
-                    turn_logger = []
-                    turn_counter += 1
+                currType = ""
+
+            df.loc[i, 'type'] = currType
+
+            if currType:                                                        # Wont log NaN
+                if i != 0 and currType != df.loc[i - 1, 'type']:      # Add Points to Turn if type doesnt change
+                    if turn_logger:
+                        turn = Turn(turn_counter, turn_logger, prevBounds)
+                        turns.append(turn)
+                                            
+                        turn_logger = []
+                        turn_counter += 1
+
+                if currType != "":
+                    turn_logger.append(df.loc[i])
+                    prevBounds = currBounds
+
+        # Close final turn
+        if turn_logger:
+            turns.append(Turn(turn_counter, turn_logger, prevBounds))
+
 
         return turns
 
@@ -98,4 +109,4 @@ class Data:
         for turn in self.turns:
             turn.save(foldername)
 
-        print(f"data successfully saved to folder:{foldername}")
+        print(f"data successfully saved to folder: '{foldername}'")
