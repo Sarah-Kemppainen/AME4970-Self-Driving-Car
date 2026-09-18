@@ -21,12 +21,19 @@ class Turn:
         for row in turn_data:
             if point_id != 0:
                 prevPoint = points[point_id-1]
-                currPoint = Point(row, point_id, self.turnId, prevPoint)
+                currPoint = Point(row, point_id, self.turnId, points[0], prevPoint)
             else:
                 currPoint = Point(row, point_id, self.turnId)
 
             points.append(currPoint)
             point_id += 1
+
+        # Set regressive properties
+        p_init = points[0]
+        # p_prev = None
+        for p in points:
+            p.time = p.timestamp - p_init.timestamp
+            # p_prev = p
 
         return points
 

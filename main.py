@@ -58,10 +58,10 @@ if __name__ == "__main__":
 
     # print(data.turns[0].points[0].dist)         # Distance between previous point and point[0] (nan)
     # print(data.turns[0].points[1].dist)         # Distance between previous point and point[1] (0)
-    print(data.turns[0].totalDist)
-    print(data.turns[0].points[120].heading)
-    print(data.turns[0].points[121].heading)
-    print(data.turns[0].points[121].delta_heading)
+    # print(data.turns[0].totalDist)
+    # print(data.turns[0].points[120].heading)
+    # print(data.turns[0].points[121].heading)
+    # print(data.turns[0].points[102].radius_of_curvature)
 
     # Saves data to csv files
     data.save(SAVE_FOLDER)

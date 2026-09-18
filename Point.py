@@ -6,11 +6,13 @@ LAT0 = 35.1823543
 LON0 = -97.435558
 
 class Point:
-    def __init__(self, point, pointId, turnId, prevPoint=""):
+    def __init__(self, point, pointId, turnId, initPoint="", prevPoint=""):
         self.turnId = turnId
         self.pointId = pointId
         self.type = point['type']
-        self.time = point['log_mono_ns']
+        self.timestamp = point['log_mono_ns']
+        self.time = None
+
         self.lon = point['lon']
         self.lat = point['lat']
         self.speed = point['speed_mps']
@@ -23,23 +25,42 @@ class Point:
             deltaY = self.y - prevPoint.y
 
             self.dist = np.sqrt((deltaX)**2 + (deltaY)**2)
-            self.heading = np.mod(np.atan2(deltaX, deltaY), 360)
-            self.delta_heading = (540 + prevPoint.heading - self.heading) % 360 - 180
+            # self.heading = np.mod(np.atan2(deltaX, deltaY), 360)
+            # self.delta_heading = (540 + prevPoint.heading - self.heading) % 360 - 180
         else:
             self.dist = 0
-            self.heading = 0
-            self.delta_heading = 0
+            # self.heading = 0
+            # self.delta_heading = 0
+
+        self.radius_of_curvature = self.getRadiusOfCurvature(prevPoint)
+        # self.heading = self.getHeading(initPoint)
 
     def calcXY(self):
         x = (self.lon-LON0) * np.cos(LAT0) * 111320
         y = (self.lat-LAT0) * 110540
         return x, y
 
+    def getRadiusOfCurvature(self, prevPoint):
+        if prevPoint != "":
+            return np.sqrt( (self.x-prevPoint.x)**2 + (self.y-prevPoint.y)**2)
+        else:
+            return 0
+
+    # def getHeading(self, initPoint):
+    #     if initPoint != "":
+    #         deltaX = self.x - initPoint.x
+    #         deltaY = self.y - initPoint.y
+
+    #         return np.mod(np.atan2(deltaX, deltaY), 360)
+    #     else:
+    #         return 0
+
     def to_df(self):
         data = {
             "turnId": [self.turnId],
             "pointId": [self.pointId],
             "type": [self.type],
+            "timestamp": [self.timestamp],
             "time [ns]": [self.time],
             "lon [deg]": [self.lon],
             "lat [deg]": [self.lat],
@@ -48,8 +69,8 @@ class Point:
             "x [m]": [self.x],
             "y [m]": [self.y],
             "dist [m]": [self.dist],
-            "heading [deg]": [self.heading],
-            "delta_heading [deg]": [self.delta_heading],
+            # "heading [deg]": [self.heading],
+            # "delta_heading [deg]": [self.delta_heading],
         }
 
         return pd.DataFrame(data)
@@ -60,6 +81,7 @@ class Point:
             f"Point("
             f"pointId={self.pointId}, "
             f"turnId={self.turnId}, "
+            f"timestamp={self.timestamp}, "
             f"time={self.time}, "
             f"lat={self.lat}, "
             f"lon={self.lon}, "
