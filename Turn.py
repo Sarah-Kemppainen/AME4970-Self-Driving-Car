@@ -30,10 +30,25 @@ class Turn:
 
         # Set regressive properties
         p_init = points[0]
-        # p_prev = None
+        p_prev = None
         for p in points:
-            p.time = p.timestamp - p_init.timestamp
-            # p_prev = p
+            p.setTime(p_init.timestamp)
+            p.setXY(p_init.lon, p_init.lat)
+
+            if p_prev != None:
+                p.setDistance(p_prev.x, p_prev.y)
+            else:
+                p.dist = 0
+
+            p_prev = p
+
+        spacer = 5   
+        for i in range(spacer, len(points)-spacer):
+            p_prev = points[i-spacer]
+            p = points[i]
+            p_next = points[i+spacer]
+
+            p.setTurnRadius(p_prev.x, p_prev.y, p_next.x, p_next.y)
 
         return points
 
