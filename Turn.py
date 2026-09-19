@@ -10,10 +10,10 @@ class Turn:
         self.bounds = bounds
 
         self.points = self.getPoints(turn_data)
-        self.size = len(self.points)
-
         self.totalDist = self.getTotalDistance()
         self.min_speed_point = self.getMinSpeedPoint()
+
+        self.size = len(self.points)
 
     def getPoints(self, turn_data):
         point_id = 0
@@ -32,11 +32,11 @@ class Turn:
         p_init = points[0]
         p_prev = None
         for p in points:
-            p.setTime(p_init.timestamp)
-            p.setXY(p_init.lon, p_init.lat)
+            p.setTime(p_init.timestamp)         # Set time
+            p.setXY(p_init.lon, p_init.lat)     # Set Local XY position
 
             if p_prev != None:
-                p.setDistance(p_prev.x, p_prev.y)
+                p.setDistance(p_prev.x, p_prev.y)   # Set distance
             else:
                 p.dist = 0
 
@@ -86,12 +86,12 @@ class Turn:
             "ulim_lon": [self.bounds[0][1]],
             "llim_lat": [self.bounds[1][0]],
             "ulim_lat": [self.bounds[1][1]],
-            "size": [self.size],
             "total_dist [m]": [self.totalDist],
             "min_speed_pointId": [self.min_speed_point.pointId],
             "min_speed_x": [self.min_speed_point.x],
             "min_speed_y": [self.min_speed_point.y],
             "speed_min [mps]": [self.min_speed_point.speed],
+            "size": [self.size],
         }
         return pd.DataFrame(data)
 
