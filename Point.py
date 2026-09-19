@@ -20,6 +20,7 @@ class Point:
         self.y = None
         self.dist = None
         self.turn_radius = None
+        self.curvature = None
 
     def setTime(self, t0):
         self.time = self.timestamp - t0
@@ -50,6 +51,10 @@ class Point:
         else:
             self.turn_radius = (a * b * c) / (2 * abs(cross))  
 
+    def setCurvature(self):
+        if self.turn_radius:
+            self.curvature = 1 / self.turn_radius
+
     def to_df(self):
         data = {
             "turnId": [self.turnId],
@@ -64,7 +69,8 @@ class Point:
             "x [m]": [self.x],
             "y [m]": [self.y],
             "dist [m]": [self.dist],
-            "turn_radius": [self.turn_radius]
+            "turn_radius": [self.turn_radius],
+            "curvature": [self.curvature],
         }
 
         return pd.DataFrame(data)

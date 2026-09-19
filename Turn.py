@@ -28,7 +28,7 @@ class Turn:
             points.append(currPoint)
             point_id += 1
 
-        # Set regressive properties
+        # Set recursive properties
         p_init = points[0]
         p_prev = None
         for p in points:
@@ -49,6 +49,9 @@ class Turn:
             p_next = points[i+spacer]
 
             p.setTurnRadius(p_prev.x, p_prev.y, p_next.x, p_next.y)
+
+        for p in points:
+            p.setCurvature()
 
         return points
 
