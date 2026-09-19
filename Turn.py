@@ -12,6 +12,7 @@ class Turn:
         self.points = self.getPoints(turn_data)
         self.totalDist = self.getTotalDistance()
         self.min_speed_point = self.getMinSpeedPoint()
+        self.max_steer_point = self.getMaxSteerPoint()
 
         self.size = len(self.points)
 
@@ -19,13 +20,8 @@ class Turn:
         point_id = 0
         points = []
         for row in turn_data:
-            if point_id != 0:
-                prevPoint = points[point_id-1]
-                currPoint = Point(row, point_id, self.turnId, points[0], prevPoint)
-            else:
-                currPoint = Point(row, point_id, self.turnId)
-
-            points.append(currPoint)
+            p = Point(row, point_id, self.turnId)
+            points.append(p)
             point_id += 1
 
         # Set recursive properties
@@ -37,6 +33,7 @@ class Turn:
 
             if p_prev != None:
                 p.setDistance(p_prev.x, p_prev.y)   # Set distance
+                p.setHeading(p_prev.x, p_prev.y)
             else:
                 p.dist = 0
 
@@ -71,6 +68,15 @@ class Turn:
 
         return currPoint
 
+    def getMaxSteerPoint(self):
+        currPoint = self.points[0]
+        
+        for point in self.points:
+            if point.steer_angle >= currPoint.steer_angle:
+                currPoint = point
+
+        return currPoint
+
     def save(self, foldername):
         id = self.turnId
         df = pd.DataFrame()
@@ -94,6 +100,7 @@ class Turn:
             "min_speed_x": [self.min_speed_point.x],
             "min_speed_y": [self.min_speed_point.y],
             "speed_min [mps]": [self.min_speed_point.speed],
+            "steer_max": [self.max_steer_point.steer_angle],
             "size": [self.size],
         }
         return pd.DataFrame(data)

@@ -3,7 +3,7 @@ import pandas as pd
 import sys
 
 class Point:
-    def __init__(self, point, pointId, turnId, initPoint="", prevPoint=""):
+    def __init__(self, point, pointId, turnId):
         self.turnId = turnId
         self.pointId = pointId
         self.type = point['type']
@@ -21,6 +21,7 @@ class Point:
         self.dist = None
         self.turn_radius = None
         self.curvature = None
+        self.heading = None
 
     def setTime(self, t0):
         self.time = self.timestamp - t0
@@ -34,6 +35,13 @@ class Point:
         dy = self.y - y_prev
 
         self.dist = np.sqrt(dx**2 + dy**2) 
+
+    def setHeading(self, x_prev, y_prev):
+        dx = self.x - x_prev
+        dy = self.y - y_prev
+
+        heading = np.degrees(np.arctan2(dx, dy))
+        self.heading = (90 - heading) % 360
 
     def setTurnRadius(self, x_prev, y_prev, x_next, y_next):
         x = self.x
@@ -71,6 +79,7 @@ class Point:
             "dist [m]": [self.dist],
             "turn_radius": [self.turn_radius],
             "curvature": [self.curvature],
+            "heading": [self.heading],
         }
 
         return pd.DataFrame(data)
@@ -90,6 +99,8 @@ class Point:
             f"x={self.x}, "
             f"y={self.y},"
             f"dist={self.dist},"
-            f"turn_radius={self.turn_radius}"
+            f"turn_radius={self.turn_radius},"
+            f"curvature={self.curvature},"
+            f"heading={self.heading}"
             f")"
         )
