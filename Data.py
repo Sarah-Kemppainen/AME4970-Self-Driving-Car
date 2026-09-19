@@ -118,3 +118,12 @@ class Data:
         df.to_csv(f'{foldername}/turns.csv')
 
         print(f"data successfully saved to folder: '{foldername}'")
+
+    def plot(self, id=None):
+        if id is None:
+            for t in self.turns:
+                t.plot()
+            print(f"turns plotted")
+        else:
+            self.turns[id].plot()
+            print(f"turn {id} plotted")

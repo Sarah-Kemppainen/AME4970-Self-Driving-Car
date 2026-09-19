@@ -22,6 +22,7 @@ class Point:
         self.turn_radius = None
         self.curvature = None
         self.heading = None
+        self.turn_angle = None
 
     def setTime(self, t0):
         self.time = self.timestamp - t0
@@ -63,6 +64,22 @@ class Point:
         if self.turn_radius:
             self.curvature = 1 / self.turn_radius
 
+    def setTurnAngle(self, x_prev, y_prev, x_next, y_next):
+        x = self.x
+        y = self.y
+
+        dx_prev = x - x_prev
+        dy_prev = y - y_prev
+
+        dx_next = x_next - x
+        dy_next = y_next - y
+
+        theta1 = np.arctan2(dy_prev, dx_prev)
+        theta2 = np.arctan2(dy_next, dx_next)
+
+        delta_theta = np.degrees(theta2 - theta1)
+        self.turn_angle = ((delta_theta + 180) % 360) - 180
+
     def to_df(self):
         data = {
             "turnId": [self.turnId],
@@ -80,6 +97,7 @@ class Point:
             "turn_radius": [self.turn_radius],
             "curvature": [self.curvature],
             "heading": [self.heading],
+            "turn_angle": [self.turn_angle],
         }
 
         return pd.DataFrame(data)
@@ -101,6 +119,7 @@ class Point:
             f"dist={self.dist},"
             f"turn_radius={self.turn_radius},"
             f"curvature={self.curvature},"
-            f"heading={self.heading}"
+            f"heading={self.heading}",
+            f"turn_angle={self.turn_angle}"
             f")"
         )

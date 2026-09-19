@@ -1,5 +1,7 @@
 from Point import Point
 
+from plot import plot_turn
+
 import pandas as pd
 import sys
 
@@ -46,6 +48,7 @@ class Turn:
             p_next = points[i+spacer]
 
             p.setTurnRadius(p_prev.x, p_prev.y, p_next.x, p_next.y)
+            p.setTurnAngle(p_prev.x, p_prev.y, p_next.x, p_next.y)
 
         for p in points:
             p.setCurvature()
@@ -86,6 +89,9 @@ class Turn:
             df = pd.concat([df, pdf], ignore_index=True)
 
         df.to_csv(f'{foldername}/turn_{id}.csv')
+
+    def plot(self):
+        plot_turn(self)
 
     def to_df(self):
         data = {
