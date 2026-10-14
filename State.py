@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+# 20 Hz model coefficients (predict steering 0.05 s ahead)
 A0 = -3.1394
 A1 = 0.9821
 A2 = np.array([-1.8182, 1.2586, -0.4677, 0.1094])
@@ -9,23 +10,20 @@ A4 = np.array([-0.0275, -0.0120, -0.2373, 0.1898])
 A5 = np.array([16.2476, -1.1744])
 
 EARTH_RADIUS = 6_371_000.0
+DT_S = 0.05
+DT_NS = DT_S * 1e9
 
 class State:
-
-    def __init__(self, time, lon, lat, speed, steer_angle, x, y, heading,):
-        self.time = float(time)
+    def __init__(self, time, lon, lat, speed, steer_angle, x, y, heading):
+        self.time = float(time)          # ns
         self.lon = float(lon)
         self.lat = float(lat)
-        self.speed = float(speed)
+        self.speed = float(speed)        # m/s
         self.steer_angle = float(steer_angle)
         self.x = float(x)
         self.y = float(y)
-        self.heading = float(heading)
+        self.heading = float(heading) % 360.0  # compass: 0 north, 90 east
 
-        if np.isnan(self.heading):
-            print("error")
-
-        # Recursive
         self.F = np.zeros(4)
         self.L = np.zeros(4)
         self.DPHI = np.zeros(4)
@@ -33,176 +31,96 @@ class State:
 
     @staticmethod
     def calculateCurvature(p0, p1, p2):
-        """
-        Signed curvature through three points in (east, north) coordinates.
-        Positive means a left turn.
-        Returns curvature in 1/meters.
-        """
         a = np.linalg.norm(p1 - p0)
         b = np.linalg.norm(p2 - p1)
         c = np.linalg.norm(p2 - p0)
-
         if min(a, b, c) < 1e-8:
             return 0.0
-
-        # Twice the signed triangle area
-        cross = (
-            (p1[0] - p0[0]) * (p2[1] - p0[1])
-            - (p1[1] - p0[1]) * (p2[0] - p0[0])
-        )
-
-        # Signed curvature = 4 * triangle area / (a * b * c)
-        return 2.0 * cross / (a * b * c)
+        cross = ((p1[0]-p0[0])*(p2[1]-p0[1])
+                 - (p1[1]-p0[1])*(p2[0]-p0[0]))
+        return 2.0 * cross / (a*b*c)
 
     def setVariables(self, wp1, wp3, wp5, wp10):
-        waypoints = {
-            1: wp1,
-            3: wp3,
-            5: wp5,
-            10: wp10,
-        }
+        waypoints = [wp1, wp3, wp5, wp10]
 
-        # Compass heading: clockwise from north.
-        # Convert to radians.
-        heading = np.deg2rad(self.heading)
+        h = np.deg2rad(self.heading)
+        # SAME convention as model training:
+        # forward positive ahead, lateral positive to vehicle RIGHT.
+        forward_vec = np.array([np.sin(h), np.cos(h)])
+        right_vec = np.array([np.cos(h), -np.sin(h)])
 
-        # Vehicle forward and left unit vectors in east/north coordinates.
-        forward_vec = np.array([
-            np.sin(heading),
-            np.cos(heading),
-        ])
-
-        left_vec = np.array([
-            -np.cos(heading),
-            np.sin(heading),
-        ])
-
-        # Local tangent-plane conversion around the current position.
-        earth_radius = 6_371_000.0
         lat0 = np.deg2rad(self.lat)
         lon0 = np.deg2rad(self.lon)
 
-        for i, (t, wp) in enumerate(waypoints.items()):
-            lat_wp = np.deg2rad(float(wp.lat))
-            lon_wp = np.deg2rad(float(wp.lon))
-
-            delta_lon = (lon_wp - lon0 + np.pi) % (2 * np.pi) - np.pi
-
-            east = earth_radius * np.cos(lat0) * delta_lon
-            north = earth_radius * (lat_wp - lat0)
-
+        local_points = []
+        for i, wp in enumerate(waypoints):
+            lat_wp = np.deg2rad(wp.lat)
+            lon_wp = np.deg2rad(wp.lon)
+            dlon = (lon_wp - lon0 + np.pi) % (2*np.pi) - np.pi
+            east = EARTH_RADIUS * np.cos(lat0) * dlon
+            north = EARTH_RADIUS * (lat_wp - lat0)
             displacement = np.array([east, north])
+            local_points.append(displacement)
 
             self.F[i] = np.dot(displacement, forward_vec)
-            self.L[i] = np.dot(displacement, left_vec)
+            self.L[i] = np.dot(displacement, right_vec)
 
-            self.DPHI[i] = np.arctan2(self.L[i], self.F[i])
+            # Model coefficients were trained using DEGREES, not radians.
+            self.DPHI[i] = np.degrees(np.arctan2(self.L[i], self.F[i]))
 
-            distance_sq = self.F[i]**2 + self.L[i]**2
-
-        # Displacements in local east/north coordinates.
         p0 = np.array([0.0, 0.0])
-
-        p1 = np.array([
-            earth_radius * np.cos(lat0) *
-            ((np.deg2rad(float(wp1.lon)) - lon0 + np.pi) % (2 * np.pi) - np.pi),
-            earth_radius * (np.deg2rad(float(wp1.lat)) - lat0),
-        ])
-
-        p5 = np.array([
-            earth_radius * np.cos(lat0) *
-            ((np.deg2rad(float(wp5.lon)) - lon0 + np.pi) % (2 * np.pi) - np.pi),
-            earth_radius * (np.deg2rad(float(wp5.lat)) - lat0),
-        ])
-
-        p10 = np.array([
-            earth_radius * np.cos(lat0) *
-            ((np.deg2rad(float(wp10.lon)) - lon0 + np.pi) % (2 * np.pi) - np.pi),
-            earth_radius * (np.deg2rad(float(wp10.lat)) - lat0),
-        ])
-
-        # K[0] = curvature through point 0, WP5, WP10
+        p1, _, p5, p10 = local_points
         self.K[0] = self.calculateCurvature(p0, p5, p10)
-
-        # K[1] = curvature through point 0, WP1, WP5
         self.K[1] = self.calculateCurvature(p0, p1, p5)
-
-
         return self.F, self.L, self.DPHI, self.K
+
+    def predictSteering(self):
+        return (A0 + A1*self.steer_angle
+                + np.dot(A2, self.F)
+                + np.dot(A3, self.L)
+                + np.dot(A4, self.DPHI)
+                + np.dot(A5, self.K))
 
     def getNext(self, speed):
         speed_next = float(speed)
+        t_next = self.time + DT_NS
+        steer_angle_next = self.predictSteering()
 
-        dt = 1e9
-
-        t_next = self.time + dt
-
-        # Predict the next steering angle from your fitted model.
-        steer_angle_next = (
-            A0
-            + A1 * self.steer_angle
-            + np.dot(A2, self.F)
-            + np.dot(A3, self.L)
-            + np.dot(A4, self.DPHI)
-            + np.dot(A5, self.K)
-        )
-
-        # Estimate path curvature from the two waypoint-based curvatures.
+        # NOTE: This propagates position using waypoint curvature, not predicted steering.
+        # It is useful as a reference-path simulation, but is not yet a vehicle dynamics model.
         curvature = np.mean(self.K)
+        speed_mid = 0.5 * (self.speed + speed_next)
 
-        # Update compass heading (clockwise from north).
-        heading_rate_rad = -self.speed * curvature
-        heading_next = (
-            self.heading
-            + np.degrees(heading_rate_rad * dt)
-        ) % 360.0
+        # Signed curvature: positive is left. Compass heading increases clockwise,
+        # so left curvature decreases compass heading.
+        heading_rate_rad_s = -speed_mid * curvature
+        heading_next = (self.heading + np.degrees(heading_rate_rad_s * DT_S)) % 360.0
 
-        # Use midpoint heading for position propagation.
-        heading_mid = np.radians(
-            self.heading
-            + 0.5 * (heading_next - self.heading
-                    + 180.0) % 360.0 - 90.0
-        )
+        # Proper shortest-angle midpoint heading.
+        delta_heading = (heading_next - self.heading + 180.0) % 360.0 - 180.0
+        heading_mid = np.radians((self.heading + 0.5*delta_heading) % 360.0)
 
-        dx = self.speed * np.sin(heading_mid) * dt
-        dy = self.speed * np.cos(heading_mid) * dt
-
+        dx = speed_mid * np.sin(heading_mid) * DT_S
+        dy = speed_mid * np.cos(heading_mid) * DT_S
         x_next = self.x + dx
         y_next = self.y + dy
 
-        # Convert the position change to GPS coordinates.
         lat_next = self.lat + np.degrees(dy / EARTH_RADIUS)
-
         cos_lat = np.cos(np.radians(self.lat))
-        if abs(cos_lat) < 1e-8:
-            raise ValueError(
-                "Longitude update is ill-conditioned near the poles"
-            )
-
-        lon_next = self.lon + np.degrees(
-            dx / (EARTH_RADIUS * cos_lat)
-        )
+        lon_next = self.lon + np.degrees(dx / (EARTH_RADIUS * cos_lat))
         lon_next = (lon_next + 180.0) % 360.0 - 180.0
 
-        return State(
-            t_next,
-            lon_next,
-            lat_next,
-            speed_next,
-            steer_angle_next,
-            x_next,
-            y_next,
-            heading_next,
-        )
+        return State(t_next, lon_next, lat_next, speed_next,
+                     steer_angle_next, x_next, y_next, heading_next)
 
-    def to_df(self,):
+    def to_df(self):
         return pd.DataFrame([{
-            "time [ns]": self.time,
-            "lon [deg]": self.lon,
-            "lat [deg]": self.lat,
-            "speed [mps]": self.speed,
-            "steer_angle [deg]": self.steer_angle,
-            "x [m]": self.x,
-            "y [m]": self.y,
-            "heading": self.heading,
+            'time [ns]': self.time,
+            'lon [deg]': self.lon,
+            'lat [deg]': self.lat,
+            'speed [mps]': self.speed,
+            'steer_angle [deg]': self.steer_angle,
+            'x [m]': self.x,
+            'y [m]': self.y,
+            'heading': self.heading,
         }])
