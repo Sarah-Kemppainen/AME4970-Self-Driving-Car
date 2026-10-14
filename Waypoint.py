@@ -1,4 +1,4 @@
-from GPSCoordinate import GPSCoordinate
+
 
 class Waypoint:
     def __init__(self, lat, lon):

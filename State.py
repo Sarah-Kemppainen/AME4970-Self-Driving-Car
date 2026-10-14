@@ -23,7 +23,7 @@ class State:
         self.heading = float(heading)
 
         if np.isnan(self.heading):
-            self.heading = 0.0
+            print("error")
 
         # Recursive
         self.F = np.zeros(4)
