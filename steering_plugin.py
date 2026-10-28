@@ -15,17 +15,24 @@ B = np.array([-0.019595646188824947, -0.020274669756973472,
 
 K = np.array([-7.204320741854705, -1.4194730228287347])
 
+B0 = 1
+B1 = 1
+
+B2 = np.array([1, 1])
+
 
 features = {}
 rel_points = {}
 
-def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, waypoints: dict):
+def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_mps, waypoints: dict):
 
     x = float(actual_x)
     y = float(actual_y)
 
     heading = float(heading_deg)
     steer = float(actual_steer_angle_deg)
+
+    speed = float(speed_mps)
 
     # ------------------------------------------------------ #
     # ----- CALCUALTE LATERAL, FORWARD AND BETA ARRAYS ----- #
@@ -76,12 +83,22 @@ def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, waypoin
     # ----- APPLY DELTA STEER EQUATION ----- #
     # -------------------------------------- #
     delta_steer = A0 + A1 * steer + F @ forward + L @ lateral + B @ beta + K @ curvature
-    print(delta_steer)
+    delta_speed = B0 + B1 * speed + B2 @ curvature
+    # print(delta_steer)
+    print(delta_speed)
 
     # Get final steering command
     cmd_steer = steer + delta_steer
+    cmd_speed = speed + delta_speed
 
-    return cmd_steer
+    stop_condition = False  # check_for_hazard('image.png') ==> False: don't stop, True: stop
+    if (stop_condition):
+        cmd_steer = 0
+
+        # Sharp steer left/right?
+        # cmd_steer = f()
+
+    return cmd_steer, cmd_speed
 
 
 if __name__ == '__main__':
@@ -103,6 +120,8 @@ if __name__ == '__main__':
 
     actual_steer_angle_deg = 0.13835
 
+    speed_mps = 0.013
+
     waypoints={
         1:  (0.084392442,	-8.604599257),
         3:  (0.013216667,	-27.42315022),
@@ -111,5 +130,6 @@ if __name__ == '__main__':
     }
 
     # Call Steering Function
-    cmd_steer_angle_deg = getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, waypoints)
-    print(cmd_steer_angle_deg)
+    cmd_steer_angle_deg, cmd_speed_mps = getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_mps, waypoints)
+    # print(cmd_steer_angle_deg)
+    print(cmd_speed_mps)
