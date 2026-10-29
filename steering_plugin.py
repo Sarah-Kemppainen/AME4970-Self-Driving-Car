@@ -24,6 +24,12 @@ B2 = np.array([1, 1])
 features = {}
 rel_points = {}
 
+def calculate_delta_speed():
+    # VIVASH's CODE
+    delta_steer = None
+     
+    return delta_steer
+
 def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_mps, waypoints: dict):
 
     x = float(actual_x)
@@ -83,7 +89,7 @@ def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_m
     # ----- APPLY DELTA STEER EQUATION ----- #
     # -------------------------------------- #
     delta_steer = A0 + A1 * steer + F @ forward + L @ lateral + B @ beta + K @ curvature
-    delta_speed = B0 + B1 * speed + B2 @ curvature
+    delta_speed = calculate_delta_speed() # B0 + B1 * speed + B2 @ curvature
     # print(delta_steer)
     print(delta_speed)
 
