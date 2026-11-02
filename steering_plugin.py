@@ -24,11 +24,39 @@ B2 = np.array([1, 1])
 features = {}
 rel_points = {}
 
-def calculate_delta_speed():
+# Speed planner constants
+DT = 0.1                 # seconds between calls -- set this to your real update interval
+START_SPEED = 4.0        # cruise / max speed (m/s)
+MAX_ACCEL = 1.5          # m/s^2 (max allowable acceleration limit)
+MAX_DECEL = -4.0         # m/s^2 (max allowable deacceleration limit)
+MAX_LATERAL_ACCEL = 1.2  # m/s^2, lower = slows more for corners
+SPEED_GAIN = 1.8         # proportional gain on speed error
+#If the car brakes too abruptly or the ride feels jerky, lower the speed gain.
+#If it’s still too fast entering corners, raise it, or lower MAX_LATERAL_ACCEL so the target speed is lower to begin with.
+
+def lookahead_curvature(fwd, lat):
     # VIVASH's CODE
-    delta_steer = None
-     
-    return delta_steer
+    """Curvature (1/m) of the arc from the car, along its heading, to a waypoint
+    at forward distance fwd and lateral offset lat (car frame)."""
+    d2 = fwd ** 2 + lat ** 2
+    if d2 < 1e-9:
+        return 0.0
+    return 2.0 * abs(lat) / d2
+
+def calculate_delta_speed(speed, curvature_ahead):
+    # VIVASH's CODE
+    # Speed planner: brakes earlier and harder for sharp turns
+    if curvature_ahead > 1e-4:
+        v_curve_limit = np.sqrt(MAX_LATERAL_ACCEL / curvature_ahead)
+    else:
+        v_curve_limit = START_SPEED
+    target_v = min(START_SPEED, v_curve_limit)
+    accel = np.clip(SPEED_GAIN * (target_v - speed), MAX_DECEL, MAX_ACCEL)
+  
+   # Simulator does v += accel * DT, so the plugin's delta speed is accel * DT
+    delta_speed = accel * DT
+
+    return delta_speed
 
 def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_mps, waypoints: dict):
 
@@ -89,7 +117,25 @@ def getSteerCmd(actual_x, actual_y, heading_deg, actual_steer_angle_deg, speed_m
     # ----- APPLY DELTA STEER EQUATION ----- #
     # -------------------------------------- #
     delta_steer = A0 + A1 * steer + F @ forward + L @ lateral + B @ beta + K @ curvature
-    delta_speed = calculate_delta_speed() # B0 + B1 * speed + B2 @ curvature
+  
+  # Curvature (1/m) toward waypoint 1 (~5-9 m ahead) for speed planning
+    curvature_ahead = lookahead_curvature(features["F_1"], features["L_1"])
+    delta_speed = calculate_delta_speed(speed, curvature_ahead) # B0 + B1 * speed + B2 @ curvature
+
+    '''
+    Example:
+    Case 1: At 4 m/s the car sees waypoint 1 at fwd = 8, lat = 2:
+      curvature = 2.0 * 2 / (64 + 4) ≈ 0.059 per meter
+      curve speed limit = sqrt(1.2 / 0.059) ≈ 4.5 m/s, so target_v stays at 4.0 m/s
+      (the car holds speed at 4 m/s limit)
+
+    Case 2: With lat = 4:
+      curvature = 2.0 * 4 / (64 + 16) = 0.1 per meter
+      curve speed limit = sqrt(1.2 / 0.1) ≈ 3.5 m/s
+      speed error = 3.5 − 4 = −0.5, so accel = 1.8 × (−0.5) = −0.9 m/s²
+      delta_speed = −0.9 × 0.1 = −0.09 m/s, so the car eases off slightly
+    '''
+  
     # print(delta_steer)
     print(delta_speed)
 
